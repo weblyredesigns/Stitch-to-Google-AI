@@ -3,7 +3,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_BANKS } from '../constants';
 import { BloodGroup, BloodBank } from '../types';
 
-// Fixing the "no default export" error by completing the component and adding export default.
 const BloodBanks: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
   const [bloodFilter, setBloodFilter] = useState<string>('All');
@@ -57,7 +56,7 @@ const BloodBanks: React.FC = () => {
           
           <div className="bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              {/* Location Input */}
+              {/* Location Input - Fixed padding to prevent overlap */}
               <div className="md:col-span-5 relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
                   <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">location_on</span>
@@ -71,7 +70,7 @@ const BloodBanks: React.FC = () => {
                 />
               </div>
 
-              {/* Blood Filter Select */}
+              {/* Blood Filter Select - Fixed padding to prevent overlap */}
               <div className="md:col-span-4 relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
                   <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">bloodtype</span>
