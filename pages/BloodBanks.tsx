@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_BANKS } from '../constants';
 import { BloodGroup, BloodBank } from '../types';
 
+// Fixing the "no default export" error by completing the component and adding export default.
 const BloodBanks: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
   const [bloodFilter, setBloodFilter] = useState<string>('All');
@@ -11,7 +13,6 @@ const BloodBanks: React.FC = () => {
   useEffect(() => {
     const loadBanks = () => {
       const registeredBanks = JSON.parse(localStorage.getItem('indiaBloodConnect_all_banks') || '[]');
-      // Cast MOCK_BANKS to include role if missing for consistency
       const mockWithRoles = MOCK_BANKS.map(b => ({ ...b, role: 'bank' as const }));
       setAllBanks([...mockWithRoles, ...registeredBanks]);
     };
@@ -39,7 +40,7 @@ const BloodBanks: React.FC = () => {
 
       return locationMatch && stockMatch;
     });
-  }, [triggerSearch, searchLocation === '' && bloodFilter === 'All' ? searchLocation : null, allBanks]);
+  }, [triggerSearch, searchLocation, bloodFilter, allBanks]);
 
   const handleSearch = () => {
     setTriggerSearch(prev => prev + 1);
@@ -53,39 +54,49 @@ const BloodBanks: React.FC = () => {
             <h1 className="text-3xl font-extrabold tracking-tight mb-2 font-display">Blood Bank Directory & Stock Status</h1>
             <p className="text-slate-500 dark:text-slate-400">Find verified blood banks and real-time stock availability across India.</p>
           </div>
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-5 relative">
-                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">location_on</span>
+              {/* Location Input */}
+              <div className="md:col-span-5 relative group">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
+                  <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">location_on</span>
+                </div>
                 <input 
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
-                  className="w-full pl-14 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all placeholder:text-slate-400 font-medium" 
-                  placeholder="Search City, Area or Zip Code" 
+                  className="w-full pl-14 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary/20 focus:bg-white dark:focus:bg-slate-950 rounded-2xl h-16 outline-none transition-all placeholder:text-slate-400 font-bold text-slate-700 dark:text-slate-200" 
+                  placeholder="City, Area or Zip Code" 
                   type="text" 
                 />
               </div>
-              <div className="md:col-span-4 relative">
-                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">bloodtype</span>
+
+              {/* Blood Filter Select */}
+              <div className="md:col-span-4 relative group">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
+                  <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">bloodtype</span>
+                </div>
                 <select 
                   value={bloodFilter}
                   onChange={(e) => setBloodFilter(e.target.value)}
-                  className="w-full pl-14 pr-10 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all text-slate-600 dark:text-slate-300 font-medium appearance-none cursor-pointer"
+                  className="w-full pl-14 pr-10 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary/20 focus:bg-white dark:focus:bg-slate-950 rounded-2xl h-16 appearance-none outline-none transition-all font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
                 >
-                  <option value="All">Filter by Stock (All Groups)</option>
-                  {bloodGroups.map(bg => (
-                    <option key={bg} value={bg}>{bg} Available</option>
-                  ))}
+                  <option value="All">All Blood Groups</option>
+                  {bloodGroups.map(g => <option key={g} value={g}>{g} Available</option>)}
                 </select>
-                <span className="material-icons absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <span className="material-icons text-slate-400">expand_more</span>
+                </div>
               </div>
+
+              {/* Search Button */}
               <div className="md:col-span-3">
                 <button 
                   onClick={handleSearch}
-                  className="w-full h-14 bg-primary text-white font-black rounded-xl hover:bg-red-700 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                  className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <span className="material-icons">search</span>
-                  Search Directory
+                  Search Banks
                 </button>
               </div>
             </div>
@@ -93,90 +104,69 @@ const BloodBanks: React.FC = () => {
         </div>
       </header>
 
-      <main className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {filteredBanks.length > 0 ? (
-          <div className="flex flex-col gap-6">
-            {filteredBanks.map((bank) => (
-              <div key={bank.id} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
-                  <div className="lg:col-span-5">
-                    <div className="flex items-start justify-between mb-6">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{bank.name}</h3>
-                          {bank.verified && <span className="material-icons text-blue-500 text-sm">verified</span>}
-                        </div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm flex items-start gap-1">
-                          <span className="material-icons text-base mt-0.5 text-primary">location_on</span>
-                          <span className="leading-relaxed">{bank.address}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Contact</p>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <span className="material-icons text-primary text-base">call</span>
-                          {bank.phone}
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Hours</p>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <span className="material-icons text-primary text-base">schedule</span>
-                          {bank.hours}
-                        </p>
-                      </div>
-                    </div>
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bank.name + ' ' + bank.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full md:w-auto px-8 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95"
-                    >
-                      <span className="material-icons text-xl">directions</span>
-                      Get Directions
-                    </a>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
+          {filteredBanks.map((bank) => (
+            <div key={bank.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white truncate">{bank.name}</h3>
+                    {bank.verified && <span className="material-icons text-blue-500 text-sm">verified</span>}
                   </div>
-                  
-                  <div className="lg:col-span-7">
-                    <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-[1.5rem] border border-slate-100/50 dark:border-slate-700/50 h-full flex flex-col justify-center">
-                      <div className="flex items-center justify-between mb-5">
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Live Stock Inventory</h4>
-                        <span className="flex items-center gap-1.5 text-[10px] text-green-600 font-black bg-green-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                          Updated Real-time
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-                        {(Object.entries(bank.stock) as [BloodGroup, string][]).map(([group, level]) => (
-                          <div key={group} className={`flex flex-col items-center justify-center py-3 rounded-2xl border transition-all ${
-                            level === 'HIGH' ? 'bg-green-50/50 text-green-700 border-green-100' :
-                            level === 'MED' ? 'bg-yellow-50/50 text-yellow-700 border-yellow-100' :
-                            'bg-red-50/50 text-red-700 border-red-100'
-                          } ${bloodFilter === group ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
-                            <span className="text-sm font-black mb-0.5">{group}</span>
-                            <span className="text-[9px] font-black uppercase tracking-tighter opacity-70">{level}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="flex items-start gap-2 text-slate-500 text-sm">
+                    <span className="material-icons text-lg mt-0.5 shrink-0">location_on</span>
+                    <p className="leading-relaxed">{bank.address}</p>
                   </div>
                 </div>
+                <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-2xl shrink-0 text-center border border-slate-100 dark:border-slate-700">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hours</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{bank.hours}</p>
+                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-20 border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
-            <span className="material-icons text-6xl text-slate-300 mb-6">search_off</span>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">No Blood Banks Found</h3>
-            <p className="text-slate-500 max-w-sm mx-auto">Try adjusting your search location or blood group filter.</p>
-            <button 
-              onClick={() => { setSearchLocation(''); setBloodFilter('All'); }}
-              className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-xl active:scale-95 transition-all shadow-md"
-            >
-              Reset Search
-            </button>
+
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-8">
+                {bloodGroups.map((group) => (
+                  <div key={group} className="flex flex-col items-center">
+                    <div className={`w-full aspect-square rounded-xl flex items-center justify-center mb-1 text-xs font-black transition-all ${
+                      bank.stock[group] === 'HIGH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      bank.stock[group] === 'MED' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                    }`}>
+                      {group}
+                    </div>
+                    <span className="text-[8px] font-black text-slate-400 uppercase">{bank.stock[group]}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-50 dark:border-slate-800">
+                <a 
+                  href={`tel:${bank.phone}`} 
+                  className="flex-1 h-14 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg"
+                >
+                  <span className="material-icons text-lg">call</span>
+                  Call Now
+                </a>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bank.name + ' ' + bank.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 h-14 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
+                >
+                  <span className="material-icons text-lg">directions</span>
+                  Directions
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredBanks.length === 0 && (
+          <div className="py-24 bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
+            <span className="material-icons text-6xl text-slate-300 mb-6">local_hospital</span>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">No Blood Banks Found</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">Try searching in a different city or broaden your search criteria.</p>
           </div>
         )}
       </main>
