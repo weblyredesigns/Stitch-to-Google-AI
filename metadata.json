@@ -1,0 +1,7 @@
+{
+  "name": "India Blood Connect",
+  "description": "A comprehensive end-to-end platform for connecting blood donors and recipients across India, featuring real-time tracking, blood bank directories, and emergency alerts.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
