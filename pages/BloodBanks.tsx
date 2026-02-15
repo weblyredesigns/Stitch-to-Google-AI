@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_BANKS } from '../constants';
 import { BloodGroup, BloodBank } from '../types';
@@ -57,21 +56,21 @@ const BloodBanks: React.FC = () => {
           <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-5 relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 z-10">location_on</span>
+                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">location_on</span>
                 <input 
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all placeholder:text-slate-400 font-medium" 
+                  className="w-full pl-14 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all placeholder:text-slate-400 font-medium" 
                   placeholder="Search City, Area or Zip Code" 
                   type="text" 
                 />
               </div>
               <div className="md:col-span-4 relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 z-10">bloodtype</span>
+                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">bloodtype</span>
                 <select 
                   value={bloodFilter}
                   onChange={(e) => setBloodFilter(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all text-slate-600 font-medium appearance-none"
+                  className="w-full pl-14 pr-10 py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary h-14 outline-none transition-all text-slate-600 dark:text-slate-300 font-medium appearance-none cursor-pointer"
                 >
                   <option value="All">Filter by Stock (All Groups)</option>
                   {bloodGroups.map(bg => (
@@ -169,7 +168,7 @@ const BloodBanks: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-20 border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
-            <span className="material-symbols-outlined text-6xl text-slate-300 mb-6">search_off</span>
+            <span className="material-icons text-6xl text-slate-300 mb-6">search_off</span>
             <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">No Blood Banks Found</h3>
             <p className="text-slate-500 max-w-sm mx-auto">Try adjusting your search location or blood group filter.</p>
             <button 
