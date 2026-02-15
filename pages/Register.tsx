@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { INDIAN_STATES_DISTRICTS } from '../data/locations';
 import { UserRole, BloodGroup, StockLevel } from '../types';
 
@@ -25,7 +25,6 @@ const Register: React.FC = () => {
     city: '',
     lastDonation: 'never',
     weight: '',
-    // Bank specific fields
     category: 'Private',
     licenseNumber: '',
     address: '',
@@ -89,58 +88,74 @@ const Register: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCompleteRegistration = () => {
+  const handleCompleteRegistration = async () => {
     setIsCompleting(true);
     const userId = (role === 'donor' ? 'IBC-' : 'BB-') + Math.random().toString(36).substr(2, 9).toUpperCase();
     
-    setTimeout(() => {
-      if (role === 'donor') {
-        const userData = {
-          ...formData,
-          id: userId,
-          role: 'donor' as const,
-          mobile: mobileNumber,
-          registeredAt: new Date().toISOString(),
-          location: `${formData.city}, ${formData.district}`,
-          verified: true,
-          imageUrl: 'https://cdn-icons-png.flaticon.com/512/147/147144.png'
-        };
-        const allDonors = JSON.parse(localStorage.getItem('indiaBloodConnect_all_donors') || '[]');
-        allDonors.push(userData);
-        localStorage.setItem('indiaBloodConnect_all_donors', JSON.stringify(allDonors));
-        localStorage.setItem('indiaBloodConnect_user', JSON.stringify(userData));
-      } else {
-        // Default stock for a new blood bank
-        const defaultStock: Record<BloodGroup, StockLevel> = {
-          'A+': 'MED', 'A-': 'LOW', 'B+': 'MED', 'B-': 'LOW',
-          'O+': 'HIGH', 'O-': 'LOW', 'AB+': 'LOW', 'AB-': 'LOW'
-        };
+    if (role === 'donor') {
+      const userData = {
+        id: userId,
+        role: 'donor',
+        name: formData.name,
+        bloodGroup: formData.bloodGroup,
+        gender: formData.gender,
+        state: formData.state,
+        district: formData.district,
+        city: formData.city,
+        lastDonated: formData.lastDonation,
+        weight: formData.weight,
+        mobile: mobileNumber,
+        location: `${formData.city}, ${formData.district}`,
+        verified: true,
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/147/147144.png'
+      };
 
-        const bankData = {
-          id: userId,
-          role: 'bank' as const,
-          name: formData.name,
-          mobile: mobileNumber,
-          phone: '+91 ' + mobileNumber,
-          state: formData.state,
-          district: formData.district,
-          city: formData.city,
-          address: formData.address || `${formData.city}, ${formData.district}, ${formData.state}`,
-          hours: formData.hours,
-          verified: true,
-          category: formData.category,
-          licenseNumber: formData.licenseNumber,
-          stock: defaultStock
-        };
-        const allBanks = JSON.parse(localStorage.getItem('indiaBloodConnect_all_banks') || '[]');
-        allBanks.push(bankData);
-        localStorage.setItem('indiaBloodConnect_all_banks', JSON.stringify(allBanks));
-        localStorage.setItem('indiaBloodConnect_user', JSON.stringify(bankData));
-      }
+      const { error } = await supabase.from('donors').insert([userData]);
       
-      window.dispatchEvent(new Event('storage'));
-      navigate('/dashboard');
-    }, 1500);
+      if (error) {
+        alert("Registration failed: " + error.message);
+        setIsCompleting(false);
+        return;
+      }
+
+      localStorage.setItem('indiaBloodConnect_user', JSON.stringify(userData));
+    } else {
+      const defaultStock: Record<BloodGroup, StockLevel> = {
+        'A+': 'MED', 'A-': 'LOW', 'B+': 'MED', 'B-': 'LOW',
+        'O+': 'HIGH', 'O-': 'LOW', 'AB+': 'LOW', 'AB-': 'LOW'
+      };
+
+      const bankData = {
+        id: userId,
+        role: 'bank',
+        name: formData.name,
+        mobile: mobileNumber,
+        phone: '+91 ' + mobileNumber,
+        state: formData.state,
+        district: formData.district,
+        city: formData.city,
+        address: formData.address || `${formData.city}, ${formData.district}, ${formData.state}`,
+        hours: formData.hours,
+        verified: true,
+        category: formData.category,
+        licenseNumber: formData.licenseNumber,
+        stock: defaultStock
+      };
+
+      const { error } = await supabase.from('blood_banks').insert([bankData]);
+      
+      if (error) {
+        alert("Registration failed: " + error.message);
+        setIsCompleting(false);
+        return;
+      }
+
+      localStorage.setItem('indiaBloodConnect_user', JSON.stringify(bankData));
+    }
+    
+    setIsCompleting(false);
+    window.dispatchEvent(new Event('storage'));
+    navigate('/dashboard');
   };
 
   return (
@@ -162,7 +177,6 @@ const Register: React.FC = () => {
         <p className="text-zinc-500 dark:text-zinc-400">Already registered? <Link to="/login" className="text-primary font-bold hover:underline">Login here</Link></p>
       </div>
 
-      {/* Role Selection Toggle */}
       {step === 1 && (
         <div className="max-w-md mx-auto mb-10 bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-2xl flex shadow-inner">
           <button onClick={() => setRole('donor')} className={`flex-1 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${role === 'donor' ? 'bg-white dark:bg-zinc-700 shadow-lg text-primary scale-100' : 'text-zinc-400 scale-95 opacity-70'}`}>Donor Profile</button>

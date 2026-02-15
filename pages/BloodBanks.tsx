@@ -1,23 +1,27 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { MOCK_BANKS } from '../constants';
+import { supabase } from '../lib/supabase';
 import { BloodGroup, BloodBank } from '../types';
 
 const BloodBanks: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
   const [bloodFilter, setBloodFilter] = useState<string>('All');
-  const [triggerSearch, setTriggerSearch] = useState(0);
   const [allBanks, setAllBanks] = useState<BloodBank[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBanks = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('blood_banks')
+      .select('*');
+    
+    if (!error && data) {
+      setAllBanks(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const loadBanks = () => {
-      const registeredBanks = JSON.parse(localStorage.getItem('indiaBloodConnect_all_banks') || '[]');
-      const mockWithRoles = MOCK_BANKS.map(b => ({ ...b, role: 'bank' as const }));
-      setAllBanks([...mockWithRoles, ...registeredBanks]);
-    };
-    loadBanks();
-    window.addEventListener('storage', loadBanks);
-    return () => window.removeEventListener('storage', loadBanks);
+    fetchBanks();
   }, []);
 
   const bloodGroups: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
@@ -34,16 +38,12 @@ const BloodBanks: React.FC = () => {
       let stockMatch = true;
       if (bloodFilter !== 'All') {
         const group = bloodFilter as BloodGroup;
-        stockMatch = bank.stock[group] === 'HIGH' || bank.stock[group] === 'MED';
+        stockMatch = bank.stock && (bank.stock[group] === 'HIGH' || bank.stock[group] === 'MED');
       }
 
       return locationMatch && stockMatch;
     });
-  }, [triggerSearch, searchLocation, bloodFilter, allBanks]);
-
-  const handleSearch = () => {
-    setTriggerSearch(prev => prev + 1);
-  };
+  }, [searchLocation, bloodFilter, allBanks]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen">
@@ -56,7 +56,6 @@ const BloodBanks: React.FC = () => {
           
           <div className="bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              {/* Location Input - Fixed padding to prevent overlap */}
               <div className="md:col-span-5 relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
                   <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">location_on</span>
@@ -70,7 +69,6 @@ const BloodBanks: React.FC = () => {
                 />
               </div>
 
-              {/* Blood Filter Select - Fixed padding to prevent overlap */}
               <div className="md:col-span-4 relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 z-10 pointer-events-none">
                   <span className="material-icons text-slate-400 group-focus-within:text-primary transition-colors">bloodtype</span>
@@ -88,14 +86,13 @@ const BloodBanks: React.FC = () => {
                 </div>
               </div>
 
-              {/* Search Button */}
               <div className="md:col-span-3">
                 <button 
-                  onClick={handleSearch}
+                  onClick={fetchBanks}
                   className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  <span className="material-icons">search</span>
-                  Search Banks
+                  <span className="material-icons">refresh</span>
+                  Refresh List
                 </button>
               </div>
             </div>
@@ -104,64 +101,60 @@ const BloodBanks: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
-          {filteredBanks.map((bank) => (
-            <div key={bank.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white truncate">{bank.name}</h3>
-                    {bank.verified && <span className="material-icons text-blue-500 text-sm">verified</span>}
-                  </div>
-                  <div className="flex items-start gap-2 text-slate-500 text-sm">
-                    <span className="material-icons text-lg mt-0.5 shrink-0">location_on</span>
-                    <p className="leading-relaxed">{bank.address}</p>
-                  </div>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-2xl shrink-0 text-center border border-slate-100 dark:border-slate-700">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hours</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{bank.hours}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-8">
-                {bloodGroups.map((group) => (
-                  <div key={group} className="flex flex-col items-center">
-                    <div className={`w-full aspect-square rounded-xl flex items-center justify-center mb-1 text-xs font-black transition-all ${
-                      bank.stock[group] === 'HIGH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                      bank.stock[group] === 'MED' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                    }`}>
-                      {group}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent animate-spin rounded-full"></div>
+          </div>
+        ) : filteredBanks.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
+            {filteredBanks.map((bank) => (
+              <div key={bank.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white truncate">{bank.name}</h3>
+                      {bank.verified && <span className="material-icons text-blue-500 text-sm">verified</span>}
                     </div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase">{bank.stock[group]}</span>
+                    <div className="flex items-start gap-2 text-slate-500 text-sm">
+                      <span className="material-icons text-lg mt-0.5 shrink-0">location_on</span>
+                      <p className="leading-relaxed">{bank.address}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-2xl shrink-0 text-center border border-slate-100 dark:border-slate-700">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hours</p>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{bank.hours}</p>
+                  </div>
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-50 dark:border-slate-800">
-                <a 
-                  href={`tel:${bank.phone}`} 
-                  className="flex-1 h-14 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg"
-                >
-                  <span className="material-icons text-lg">call</span>
-                  Call Now
-                </a>
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bank.name + ' ' + bank.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 h-14 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
-                >
-                  <span className="material-icons text-lg">directions</span>
-                  Directions
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-8">
+                  {bloodGroups.map((group) => (
+                    <div key={group} className="flex flex-col items-center">
+                      <div className={`w-full aspect-square rounded-xl flex items-center justify-center mb-1 text-xs font-black transition-all ${
+                        bank.stock && bank.stock[group] === 'HIGH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        bank.stock && bank.stock[group] === 'MED' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                        'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                      }`}>
+                        {group}
+                      </div>
+                      <span className="text-[8px] font-black text-slate-400 uppercase">{bank.stock ? bank.stock[group] : 'N/A'}</span>
+                    </div>
+                  ))}
+                </div>
 
-        {filteredBanks.length === 0 && (
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-50 dark:border-slate-800">
+                  <a href={`tel:${bank.phone}`} className="flex-1 h-14 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg">
+                    <span className="material-icons text-lg">call</span>
+                    Call Now
+                  </a>
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bank.name + ' ' + bank.address)}`} target="_blank" rel="noopener noreferrer" className="flex-1 h-14 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95 transition-all">
+                    <span className="material-icons text-lg">directions</span>
+                    Directions
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
           <div className="py-24 bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 text-center">
             <span className="material-icons text-6xl text-slate-300 mb-6">local_hospital</span>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">No Blood Banks Found</h3>

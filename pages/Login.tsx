@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { UserRole } from '../types';
 
 const Login: React.FC = () => {
@@ -42,31 +42,39 @@ const Login: React.FC = () => {
     if (val && index < 3) document.getElementById(`login-otp-${index + 1}`)?.focus();
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (otp.some(o => !o)) {
       alert("Please enter the complete OTP.");
       return;
     }
 
     if (role === 'donor') {
-      const allDonors = JSON.parse(localStorage.getItem('indiaBloodConnect_all_donors') || '[]');
-      const existingUser = allDonors.find((u: any) => u.mobile === mobileNumber);
-      if (existingUser) {
-        localStorage.setItem('indiaBloodConnect_user', JSON.stringify({ ...existingUser, role: 'donor' }));
+      const { data, error } = await supabase
+        .from('donors')
+        .select('*')
+        .eq('mobile', mobileNumber)
+        .single();
+      
+      if (error || !data) {
+        alert("No donor account found with this mobile number.");
+      } else {
+        localStorage.setItem('indiaBloodConnect_user', JSON.stringify({ ...data, role: 'donor' }));
         window.dispatchEvent(new Event('storage'));
         navigate('/dashboard');
-      } else {
-        alert("No donor account found with this mobile number.");
       }
     } else {
-      const allBanks = JSON.parse(localStorage.getItem('indiaBloodConnect_all_banks') || '[]');
-      const existingBank = allBanks.find((b: any) => b.mobile === mobileNumber);
-      if (existingBank) {
-        localStorage.setItem('indiaBloodConnect_user', JSON.stringify({ ...existingBank, role: 'bank' }));
+      const { data, error } = await supabase
+        .from('blood_banks')
+        .select('*')
+        .eq('mobile', mobileNumber)
+        .single();
+      
+      if (error || !data) {
+        alert("No blood bank account found with this mobile number.");
+      } else {
+        localStorage.setItem('indiaBloodConnect_user', JSON.stringify({ ...data, role: 'bank' }));
         window.dispatchEvent(new Event('storage'));
         navigate('/dashboard');
-      } else {
-        alert("No blood bank account found with this mobile number.");
       }
     }
   };
@@ -87,20 +95,9 @@ const Login: React.FC = () => {
         <h1 className="text-3xl font-black text-zinc-900 dark:text-white mb-2">Welcome Back</h1>
         <p className="text-zinc-500 dark:text-zinc-400 mb-8">Access your {role === 'donor' ? 'donor' : 'organization'} portal.</p>
 
-        {/* Role Toggle */}
         <div className="bg-slate-100 dark:bg-zinc-800 p-1 rounded-2xl flex mb-8">
-          <button 
-            onClick={() => setRole('donor')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${role === 'donor' ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}
-          >
-            Individual Donor
-          </button>
-          <button 
-            onClick={() => setRole('bank')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${role === 'bank' ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}
-          >
-            Blood Bank
-          </button>
+          <button onClick={() => setRole('donor')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${role === 'donor' ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}>Individual Donor</button>
+          <button onClick={() => setRole('bank')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${role === 'bank' ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}>Blood Bank</button>
         </div>
 
         <div className="space-y-8">
@@ -108,24 +105,12 @@ const Login: React.FC = () => {
             <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-1">Registered Mobile</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">+91</span>
-              <input 
-                type="tel" 
-                maxLength={10}
-                value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                disabled={isOtpSent}
-                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus:ring-primary focus:border-primary disabled:opacity-50 transition-all outline-none font-bold"
-                placeholder="00000 00000"
-              />
+              <input type="tel" maxLength={10} value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))} disabled={isOtpSent} className="w-full pl-14 pr-4 py-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus:ring-primary focus:border-primary disabled:opacity-50 transition-all outline-none font-bold" placeholder="00000 00000" />
             </div>
           </div>
 
           {!isOtpSent ? (
-            <button 
-              onClick={handleSendOtp}
-              disabled={isVerifying || mobileNumber.length !== 10}
-              className="w-full py-5 bg-primary text-white font-bold rounded-2xl hover:bg-red-700 shadow-xl shadow-primary/20 disabled:bg-zinc-300 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
+            <button onClick={handleSendOtp} disabled={isVerifying || mobileNumber.length !== 10} className="w-full py-5 bg-primary text-white font-bold rounded-2xl hover:bg-red-700 shadow-xl shadow-primary/20 disabled:bg-zinc-300 transition-all active:scale-95 flex items-center justify-center gap-2">
               {isVerifying ? <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full"></div> : 'Send Login OTP'}
             </button>
           ) : (
@@ -134,37 +119,20 @@ const Login: React.FC = () => {
                 <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-1">Enter OTP</label>
                 <div className="flex gap-3">
                   {[0, 1, 2, 3].map(i => (
-                    <input 
-                      key={i} id={`login-otp-${i}`}
-                      type="text" maxLength={1}
-                      value={otp[i]}
-                      onChange={(e) => handleOtpInput(i, e.target.value)}
-                      className="w-full h-16 text-center text-2xl font-black rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 focus:border-primary outline-none transition-all"
-                    />
+                    <input key={i} id={`login-otp-${i}`} type="text" maxLength={1} value={otp[i]} onChange={(e) => handleOtpInput(i, e.target.value)} className="w-full h-16 text-center text-2xl font-black rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 focus:border-primary outline-none transition-all" />
                   ))}
                 </div>
                 <div className="text-right">
-                  {timer > 0 ? (
-                    <span className="text-xs text-zinc-400 font-bold">Resend in {timer}s</span>
-                  ) : (
-                    <button onClick={handleSendOtp} className="text-xs text-primary font-black uppercase tracking-widest hover:underline">Resend OTP</button>
-                  )}
+                  {timer > 0 ? <span className="text-xs text-zinc-400 font-bold">Resend in {timer}s</span> : <button onClick={handleSendOtp} className="text-xs text-primary font-black uppercase tracking-widest hover:underline">Resend OTP</button>}
                 </div>
               </div>
-              <button 
-                onClick={handleLogin}
-                className="w-full py-5 bg-primary text-white font-bold rounded-2xl hover:bg-red-700 shadow-xl shadow-primary/20 transition-all active:scale-95"
-              >
-                Verify & Login
-              </button>
+              <button onClick={handleLogin} className="w-full py-5 bg-primary text-white font-bold rounded-2xl hover:bg-red-700 shadow-xl shadow-primary/20 transition-all active:scale-95">Verify & Login</button>
             </div>
           )}
         </div>
 
         <div className="mt-12 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center">
-          <p className="text-sm text-zinc-500">
-            Don't have an account? <Link to="/register" className="text-primary font-black hover:underline">Register Now</Link>
-          </p>
+          <p className="text-sm text-zinc-500">Don't have an account? <Link to="/register" className="text-primary font-black hover:underline">Register Now</Link></p>
         </div>
       </div>
     </div>

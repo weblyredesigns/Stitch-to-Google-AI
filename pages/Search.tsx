@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MOCK_DONORS } from '../constants';
+import { supabase } from '../lib/supabase';
 import { BloodGroup, Donor } from '../types';
 import { INDIAN_STATES_DISTRICTS } from '../data/locations';
 
@@ -12,12 +11,12 @@ const Search: React.FC = () => {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [searchCity, setSearchCity] = useState('');
   const [allDonors, setAllDonors] = useState<Donor[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const bloodGroups: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
   const states = Object.keys(INDIAN_STATES_DISTRICTS).sort();
   const districts = selectedState ? INDIAN_STATES_DISTRICTS[selectedState].sort() : [];
 
-  // Init from URL and Storage
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const groupParam = searchParams.get('group') as BloodGroup;
@@ -28,14 +27,19 @@ const Search: React.FC = () => {
     if (stateParam) setSelectedState(stateParam);
     if (districtParam) setSelectedDistrict(districtParam);
 
-    const loadDonors = () => {
-      const registeredDonors = JSON.parse(localStorage.getItem('indiaBloodConnect_all_donors') || '[]');
-      setAllDonors([...MOCK_DONORS, ...registeredDonors]);
+    const fetchDonors = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('donors')
+        .select('*');
+      
+      if (!error && data) {
+        setAllDonors(data);
+      }
+      setLoading(false);
     };
 
-    loadDonors();
-    window.addEventListener('storage', loadDonors);
-    return () => window.removeEventListener('storage', loadDonors);
+    fetchDonors();
   }, [location.search]);
 
   const filteredDonors = useMemo(() => {
@@ -61,7 +65,6 @@ const Search: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar Filters */}
         <aside className="w-full lg:w-80 flex-shrink-0">
           <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-3xl border border-primary/10 shadow-sm text-left">
             <div className="flex items-center justify-between mb-6">
@@ -115,7 +118,6 @@ const Search: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Donor List */}
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 text-left">
             <div>
@@ -123,19 +125,18 @@ const Search: React.FC = () => {
                 {selectedDistrict ? `Donors in ${selectedDistrict}` : selectedState ? `Donors in ${selectedState}` : 'Verified Donors Across India'}
               </h1>
               <p className="text-sm text-slate-500 font-medium">
-                Found {filteredDonors.length} matches {selectedGroup && `for ${selectedGroup}`}
+                {loading ? 'Searching...' : `Found ${filteredDonors.length} matches ${selectedGroup && `for ${selectedGroup}`}`}
               </p>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs font-bold text-slate-400 uppercase">Sort:</span>
-              <select className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl text-xs py-2 px-3 outline-none focus:ring-1 focus:ring-primary flex-1 sm:flex-none">
-                <option>Nearest First</option>
-                <option>Recently Active</option>
-              </select>
             </div>
           </div>
 
-          {filteredDonors.length > 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-64 bg-slate-100 dark:bg-slate-800 rounded-3xl animate-pulse"></div>
+              ))}
+            </div>
+          ) : filteredDonors.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {filteredDonors.map((donor) => (
                 <div key={donor.id} className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all text-left relative overflow-hidden group">
@@ -144,7 +145,7 @@ const Search: React.FC = () => {
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex gap-4">
                       <div className="relative shrink-0">
-                        <img alt={donor.name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl object-cover ring-4 ring-slate-50 dark:ring-slate-800 shadow-sm" src={donor.imageUrl} />
+                        <img alt={donor.name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl object-cover ring-4 ring-slate-50 dark:ring-slate-800 shadow-sm" src={donor.imageUrl || 'https://cdn-icons-png.flaticon.com/512/147/147144.png'} />
                         <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-white dark:border-slate-900 rounded-full"></span>
                       </div>
                       <div className="min-w-0">
@@ -165,19 +166,11 @@ const Search: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 relative z-10">
-                    <a 
-                      href={`tel:+91${donor.mobile}`}
-                      className="flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl font-black text-sm active:scale-95 shadow-lg shadow-primary/20 transition-all hover:bg-red-700"
-                    >
+                    <a href={`tel:+91${donor.mobile}`} className="flex items-center justify-center gap-2 py-3 bg-primary text-white rounded-2xl font-black text-sm active:scale-95 shadow-lg shadow-primary/20 transition-all hover:bg-red-700">
                       <span className="material-icons text-xl">call</span>
                       Call
                     </a>
-                    <a 
-                      href={`https://wa.me/91${donor.mobile}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 py-3 bg-[#25D366] text-white rounded-2xl font-black text-sm active:scale-95 shadow-lg shadow-emerald-500/20 transition-all hover:bg-[#20ba5a]"
-                    >
+                    <a href={`https://wa.me/91${donor.mobile}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 bg-[#25D366] text-white rounded-2xl font-black text-sm active:scale-95 shadow-lg shadow-emerald-500/20 transition-all hover:bg-[#20ba5a]">
                       <span className="material-icons text-xl">chat</span>
                       WhatsApp
                     </a>
