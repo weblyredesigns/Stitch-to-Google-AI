@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
@@ -73,7 +72,7 @@ const EmergencyModal: React.FC<{ requests: BloodRequest[], onClose: () => void }
                   <span className="material-icons text-sm">call</span>
                   Call Now
                 </a>
-                <a href={`https://wa.me/91${request.contactMobile}`} target="_blank" className="flex items-center justify-center gap-2 py-3 bg-[#25D366] text-white rounded-xl font-black text-xs active:scale-95 shadow-md shadow-emerald-500/20 hover:bg-[#20ba5a]">
+                <a href={`https://wa.me/91${request.contactMobile}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-3 bg-[#25D366] text-white rounded-xl font-black text-xs active:scale-95 shadow-md shadow-emerald-500/20 hover:bg-[#20ba5a]">
                   <span className="material-icons text-sm">chat</span>
                   WhatsApp
                 </a>
@@ -107,7 +106,6 @@ const LiveAlertBar: React.FC<{ onView: (rs: BloodRequest[]) => void }> = ({ onVi
       const user = JSON.parse(userStr);
       const requests = JSON.parse(requestsStr);
 
-      // Filter all requests matching user's District or State
       const matches = requests
         .filter((r: BloodRequest) => 
           r.district.toLowerCase() === user.district.toLowerCase() || 
@@ -346,7 +344,6 @@ const App: React.FC = () => {
           </Routes>
         </main>
         
-        {/* Global Live Alert & Modal System */}
         <LiveAlertBar onView={(rs) => setSelectedRequests(rs)} />
         <EmergencyModal 
           requests={selectedRequests} 
