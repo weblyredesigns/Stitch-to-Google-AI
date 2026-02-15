@@ -1,8 +1,16 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DonationCamp } from '../types';
 import { INDIAN_STATES_DISTRICTS } from '../data/locations';
+
+interface CampRegistration {
+  id?: string;
+  camp_id: string;
+  user_id: string;
+  created_at?: string;
+}
 
 const Camps: React.FC = () => {
   const navigate = useNavigate();
@@ -29,7 +37,7 @@ const Camps: React.FC = () => {
     const { data: regData } = await supabase.from('camp_registrations').select('*');
     if (regData) {
       const regMap: Record<string, string[]> = {};
-      regData.forEach(reg => {
+      (regData as CampRegistration[]).forEach((reg: CampRegistration) => {
         if (!regMap[reg.camp_id]) regMap[reg.camp_id] = [];
         regMap[reg.camp_id].push(reg.user_id);
       });
